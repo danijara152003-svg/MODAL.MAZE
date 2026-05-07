@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYT Protocol: Modal Maze</title>
+    <style>
+        :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
+        body { 
+            background: #050505; color: white; 
+            font-family: 'Courier New', monospace; 
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; overflow: hidden; 
+            touch-action: none; 
+        }
+        .overlay { 
+            position: absolute; inset: 0; 
+            background: rgba(0, 0, 0, 0.9); 
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            z-index: 100; text-align: center; 
+        }
+        .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); }
+        .btn { 
+            padding: 15px 30px; background: var(--neon); border: none; 
+            font-weight: bold; cursor: pointer; border-radius: 50px; 
+            box-shadow: 0 0 15px var(--neon); color: black; 
+            margin-top: 20px; font-family: 'Courier New', monospace; 
+        }
+        #sentence-box { 
+            margin-bottom: 10px; padding: 15px; 
+            border: 2px solid var(--blue); width: 90%; 
+            max-width: 600px; text-align: center; 
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 10px;
+        }
+        canvas { 
+            border: 2px solid var(--blue); 
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); 
+            max-width: 95vw; max-height: 45vh; 
+            background: black;
+        }
+        .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 20px; }
+        .ctrl-btn { 
+            width: 60px; height: 60px; 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid var(--blue); 
+            color: white; border-radius: 50%; 
+            display: flex; align-items: center; 
+            justify-content: center; font-size: 1.5rem; 
+            user-select: none;
+        }
+        .ctrl-btn:active { background: var(--neon); color: black; }
+        .up { grid-area: up; } .left { grid-area: left; } .down { grid-area: down; } .right { grid-area: right; }
+        .stats { margin-top: 10px; color: var(--neon); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="overlay">
+        <h1 class="cyber-title">MODAL MAZE</h1>
+        <p>Usa las flechas para recoger el Modal correcto</p>
+        <button class="btn" onclick="startGame()">INICIAR PROTOCOLO</button>
+    </div>
+
+    <div id="sentence-box">
+        <span id="sentence-text">CARGANDO SISTEMA...</span>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div class="stats">SCORE: <span id="score-val">0</span> | LIVES: <span id="lives-val">5</span></div>
+
+    <div class="controls">
+        <div class="ctrl-btn up" onpointerdown="player.nextDir={x:0,y:-1}">▲</div>
+        <div class="ctrl-btn left" onpointerdown="player.nextDir={x:-1,y:0}">◀</div>
+        <div class="ctrl-btn down" onpointerdown="player.nextDir={x:0,y:1}">▼</div>
+        <div class="ctrl-btn right" onpointerdown="player.nextDir={x:1,y:0}">▶</div>
+    </div>
+
+    <script>
+        // --- DATA SECTION (Tus preguntas de data.js) ---
+        const database = [
+            {s: "She ___ swim very well.", a: "CAN"}, 
+            {s: "I ___ go to the party tonight.", a: "MIGHT"},
+            {s: "You ___ smoke here; it's forbidden.", a: "MUSTN'T"}, 
+            {s: "___ I help you?", a: "MAY"},
+            {s: "We ___ respect the law.", a: "MUST"}, 
+            {s: "You ___ eat more vegetables.", a: "SHOULD"},
+            {s: "They ___ be at home; the lights are on.", a: "MUST"}, 
+            {s: "I ___ speak French when I was a child.", a: "COULD"},
+            {s: "You ___ drive so fast; it's dangerous.", a: "SHOULDN'T"}, 
+            {s: "___ you open the window, please?", a: "COULD"},
+            {s: "It ___ rain later, look at the clouds.", a: "MAY"}, 
+            {s: "You ___ wear a seatbelt.", a: "MUST"},
+            {s: "I ___ find my keys anywhere.", a: "CAN'T"}, 
+            {s: "She ___ be tired after work.", a: "SHOULD"}
+        ];
+
+        const modals = ["CAN", "MUST", "SHOULD", "MAY", "COULD", "MIGHT", "MUSTN'T", "CAN'T"];
+
+        // --- GAME ENGINE SECTION (Tu lógica de game.js e index.html) ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const tileSize = 40;
+
+        // Configuración de Sonidos (Rutas corregidas para tus archivos mp3.mp3)
+        const sounds = {
+            music: new Audio('pac_music.mp3.mp3'),
+            start: new Audio('pac_Start.mp3.mp3'),
+            win: new Audio('pac_win.mp3.mp3'),
+            lose: new Audio('pac_lose.mp3.mp3'),
+            move: new Audio('pac_move.mp3.mp3')
+        };
+        sounds.music.loop = true;
+
+        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0} };
+        let score = 0;
+        let lives = 5;
+        let gameRunning = false;
+        let currentQuestion = {};
+        let options = [];
+
+        const maze = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,0,1,1,1,1,0,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            score = 0; lives = 5;
+            updateStats();
+            gameRunning = true;
+            sounds.start.play();
+            sounds.music.play();
+            newQuestion();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function newQuestion() {
+            currentQuestion = database[Math.floor(Math.random() * database.length)];
+            document.getElementById('sentence-text').innerText = currentQuestion.s.replace("___", "_______");
+            
+            // Generar opciones (la correcta + 3 aleatorias)
+            options = [currentQuestion.a];
+            while(options.length < 4) {
+                let r = modals[Math.floor(Math.random() * modals.length)];
+                if(!options.includes(r)) options.push(r);
+            }
+            options.sort(() => Math.random() - 0.5);
+            
+            // Reset player position
+            player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; player.nextDir = {x:0,y:0};
+        }
+
+        function updateStats() {
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('lives-val').innerText = lives;
+        }
+
+        function update() {
+            if(!gameRunning) return;
+
+            // Intentar cambiar de dirección
+            if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
+                player.dx = player.nextDir.x;
+                player.dy = player.nextDir.y;
+                if(player.dx !== 0 || player.dy !== 0) sounds.move.play().catch(()=>{});
+            }
+
+            // Moverse
+            if (maze[player.y + player.dy][player.x + player.dx] === 0) {
+                player.x += player.dx;
+                player.y += player.dy;
+            }
+
+            // Colisión con esquinas (opciones)
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
+            targets.forEach((t, i) => {
+                if(player.x === t.x && player.y === t.y) {
+                    if(options[i] === currentQuestion.a) {
+                        sounds.win.play();
+                        score += 100;
+                        updateStats();
+                        newQuestion();
+                    } else {
+                        sounds.lose.play();
+                        lives--;
+                        updateStats();
+                        if(lives <= 0) {
+                            alert("GAME OVER - Protocolo Fallido");
+                            location.reload();
+                        } else {
+                            newQuestion();
+                        }
+                    }
+                }
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar Laberinto
+            maze.forEach((row, y) => row.forEach((cell, x) => {
+                if(cell === 1) {
+                    ctx.strokeStyle = "#00d4ff";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x * tileSize + 5, y * tileSize + 5, tileSize - 10, tileSize - 10);
+                }
+            }));
+
+            // Dibujar Opciones (Esquinas)
+            const colors = ["#0f0", "#0ff", "#f0f", "#f80"];
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
+            targets.forEach((t, i) => {
+                ctx.fillStyle = colors[i];
+                ctx.beginPath();
+                ctx.arc(t.x * tileSize + tileSize/2, t.y * tileSize + tileSize/2, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = "white";
+                ctx.font = "bold 12px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(options[i], t.x * tileSize + tileSize/2, t.y * tileSize + tileSize - 2);
+            });
+
+            // Dibujar Jugador (Pac-Man)
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            let startAngle = 0.2 * Math.PI;
+            let endAngle = 1.8 * Math.PI;
+            // Rotar boca según dirección
+            if(player.dx === -1) { startAngle = 1.2 * Math.PI; endAngle = 0.8 * Math.PI; }
+            if(player.dy === -1) { startAngle = 1.7 * Math.PI; endAngle = 1.3 * Math.PI; }
+            if(player.dy === 1) { startAngle = 0.7 * Math.PI; endAngle = 0.3 * Math.PI; }
+
+            ctx.arc(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2, 15, startAngle, endAngle);
+            ctx.lineTo(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2);
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if(gameRunning) setTimeout(() => requestAnimationFrame(gameLoop), 150);
+        }
+
+        // Soporte para teclado también
+        window.addEventListener('keydown', (e) => {
+            if(e.key === "ArrowUp") player.nextDir = {x:0, y:-1};
+            if(e.key === "ArrowDown") player.nextDir = {x:0, y:1};
+            if(e.key === "ArrowLeft") player.nextDir = {x:-1, y:0};
+            if(e.key === "ArrowRight") player.nextDir = {x:1, y:0};
+        });
+
+    </script>
+</body>
+</html>
