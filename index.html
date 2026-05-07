@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Modal Maze: 60 Challenge Edition</title>
+    <title>Modal Maze: Super Slow Edition</title>
     <style>
         :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
         body { background: #050505; color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; touch-action: none; }
@@ -25,12 +25,12 @@
 
     <div id="screen" class="overlay">
         <h1 class="cyber-title" id="screen-title">MODAL MAZE</h1>
-        <p id="screen-desc" style="color: var(--blue);">60 New Sentences Protocol. Can you master them all?</p>
+        <p id="screen-desc" style="color: var(--blue);">Ghosts are now 33% slower. Practice 60 different sentences!</p>
         <div id="review-list" style="display:none;"></div>
         <button class="btn" id="main-btn" onclick="startGame()">START</button>
     </div>
 
-    <div id="sentence-box"><span id="sentence-text">INITIALIZING...</span></div>
+    <div id="sentence-box"><span id="sentence-text">SYSTEM READY</span></div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <div class="stats">SCORE: <span id="score-val">0</span>/10 | LIVES: <span id="lives-val">5</span></div>
 
@@ -42,39 +42,38 @@
     </div>
 
     <script>
-        // --- 60 SENTENCES DATABASE ---
         const MASTER_DB = [
-            // CAN / CAN'T (10)
+            // CAN / CAN'T
             {s: "Birds ___ fly high in the sky.", a: "CAN"}, {s: "I ___ swim, I never learned.", a: "CAN'T"},
             {s: "___ you speak more than two languages?", a: "CAN"}, {s: "Cats ___ see very well in the dark.", a: "CAN"},
             {s: "An elephant ___ jump because it's too heavy.", a: "CAN'T"}, {s: "She ___ play the piano beautifully.", a: "CAN"},
             {s: "We ___ enter the room; the door is locked.", a: "CAN'T"}, {s: "Humans ___ breathe underwater naturally.", a: "CAN'T"},
             {s: "___ I use your phone for a second?", a: "CAN"}, {s: "He ___ run very fast; he is an athlete.", a: "CAN"},
-            // MUST / MUSTN'T (10)
+            // MUST / MUSTN'T
             {s: "You ___ wear a seatbelt while driving.", a: "MUST"}, {s: "You ___ smoke inside the hospital.", a: "MUSTN'T"},
             {s: "We ___ follow the school rules.", a: "MUST"}, {s: "Drivers ___ stop when the light is red.", a: "MUST"},
             {s: "You ___ touch that wire; it's dangerous.", a: "MUSTN'T"}, {s: "I ___ finish my homework before tomorrow.", a: "MUST"},
             {s: "You ___ tell anyone my secret!", a: "MUSTN'T"}, {s: "Students ___ use phones during the exam.", a: "MUSTN'T"},
             {s: "We ___ protect the environment.", a: "MUST"}, {s: "You ___ shout in the library.", a: "MUSTN'T"},
-            // MAY / MAY NOT (10)
+            // MAY / MAY NOT
             {s: "___ I go to the bathroom, teacher?", a: "MAY"}, {s: "It ___ rain this afternoon, take an umbrella.", a: "MAY"},
             {s: "You ___ leave the table once you finish eating.", a: "MAY"}, {s: "Guests ___ use the pool after 10 PM.", a: "MAY NOT"},
             {s: "___ I borrow your pen for a moment?", a: "MAY"}, {s: "The boss ___ be in his office right now.", a: "MAY"},
             {s: "You ___ take photos inside this museum.", a: "MAY NOT"}, {s: "This ___ be the right address, I'm not sure.", a: "MAY"},
             {s: "Children ___ enter without an adult.", a: "MAY NOT"}, {s: "___ we sit here, please?", a: "MAY"},
-            // MIGHT / MIGHT NOT (10)
+            // MIGHT / MIGHT NOT
             {s: "If we hurry, we ___ catch the bus.", a: "MIGHT"}, {s: "I ___ go to the party, I'm very tired.", a: "MIGHT NOT"},
             {s: "There ___ be a storm tonight, look at the sky.", a: "MIGHT"}, {s: "He ___ remember me, we met years ago.", a: "MIGHT NOT"},
             {s: "We ___ travel to Japan next year.", a: "MIGHT"}, {s: "Don't eat that, it ___ be expired.", a: "MIGHT"},
             {s: "She ___ arrive on time because of the traffic.", a: "MIGHT NOT"}, {s: "It's early; they ___ be awake yet.", a: "MIGHT NOT"},
             {s: "Buying this ___ be a good idea.", a: "MIGHT"}, {s: "I ___ have enough money for that car.", a: "MIGHT NOT"},
-            // SHOULD / SHOULDN'T (10)
+            // SHOULD / SHOULDN'T
             {s: "You ___ drink more water every day.", a: "SHOULD"}, {s: "You ___ eat so much junk food.", a: "SHOULDN'T"},
             {s: "If you are sick, you ___ see a doctor.", a: "SHOULD"}, {s: "We ___ be kind to other people.", a: "SHOULD"},
             {s: "You ___ sleep with your lights on.", a: "SHOULDN'T"}, {s: "They ___ save money for the future.", a: "SHOULD"},
             {s: "You ___ lie to your parents.", a: "SHOULDN'T"}, {s: "I think you ___ apologize to her.", a: "SHOULD"},
             {s: "You ___ watch TV all day long.", a: "SHOULDN'T"}, {s: "We ___ waste water while brushing teeth.", a: "SHOULDN'T"},
-            // COULD / COULDN'T (10)
+            // COULD / COULDN'T
             {s: "When I was young, I ___ run for miles.", a: "COULD"}, {s: "It was so loud I ___ hear anything.", a: "COULDN'T"},
             {s: "___ you help me with this heavy box?", a: "COULD"}, {s: "I ___ find my keys anywhere yesterday.", a: "COULDN'T"},
             {s: "She ___ read when she was only four.", a: "COULD"}, {s: "We ___ go to the beach because of the rain.", a: "COULDN'T"},
@@ -83,7 +82,6 @@
         ];
 
         const modals = ["CAN", "CAN'T", "MUST", "MUSTN'T", "MAY", "MAY NOT", "MIGHT", "MIGHT NOT", "SHOULD", "SHOULDN'T", "COULD", "COULDN'T"];
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const tileSize = 40;
@@ -102,7 +100,7 @@
             sounds[name].play().catch(()=>{});
         }
 
-        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0} };
+        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0}, shield: 0 };
         let ghosts = [
             { x: 1, y: 1, dx: 1, dy: 0, color: '#FF0000' },
             { x: 18, y: 1, dx: -1, dy: 0, color: '#FFB8FF' },
@@ -110,8 +108,7 @@
         ];
 
         let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
-        let gameDeck = []; // El mazo de 10 preguntas para la partida actual
-        let ghostMoveCounter = 0;
+        let gameDeck = [], ghostMoveCounter = 0;
 
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -126,14 +123,21 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function startGame() {
-            // Mezclar toda la base de datos y sacar 10 para esta partida
-            gameDeck = [...MASTER_DB].sort(() => Math.random() - 0.5).slice(0, 10);
-            
+            gameDeck = shuffle([...MASTER_DB]).slice(0, 10);
             document.getElementById('screen').style.display = 'none';
             document.getElementById('review-list').style.display = 'none';
             score = 0; lives = 5; updateStats();
             gameRunning = true;
+            player.shield = 180; // 3 segundos de escudo inicial
             playSound('start');
             sounds.music.play().catch(()=>{});
             newQuestion();
@@ -141,20 +145,14 @@
         }
 
         function newQuestion() {
-            if(gameDeck.length === 0) {
-                showEndScreen("MISSION ACCOMPLISHED!");
-                return;
-            }
-            // Sacar la siguiente pregunta del mazo de 10
+            if(gameDeck.length === 0) { showEndScreen("EXCELLENT!"); return; }
             currentQuestion = gameDeck.pop();
             document.getElementById('sentence-text').innerText = currentQuestion.s.replace("___", "_______");
             
-            options = [currentQuestion.a];
-            while(options.length < 4) {
-                let r = modals[Math.floor(Math.random() * modals.length)];
-                if(!options.includes(r)) options.push(r);
-            }
-            options.sort(() => Math.random() - 0.5);
+            // Elegir distractores únicos
+            let distractors = shuffle(modals.filter(m => m !== currentQuestion.a)).slice(0, 3);
+            options = shuffle([currentQuestion.a, ...distractors]);
+            
             player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; player.nextDir = {x:0,y:0};
         }
 
@@ -163,17 +161,16 @@
             sounds.music.pause();
             const screen = document.getElementById('screen');
             const list = document.getElementById('review-list');
-            
             document.getElementById('screen-title').innerText = title;
-            document.getElementById('screen-desc').innerText = "Grammar Review:";
-            document.getElementById('main-btn').innerText = "RESTART PROTOCOL";
+            document.getElementById('screen-desc').innerText = "Grammar Mastery Review:";
+            document.getElementById('main-btn').innerText = "RESTART GAME";
             
-            list.innerHTML = MASTER_DB.filter(q => q.a === q.a).sort(() => 0.5 - Math.random()).slice(0, 15).map(item => 
+            // Mostrar 10 oraciones mezcladas con sus respuestas
+            list.innerHTML = shuffle([...MASTER_DB]).slice(0, 10).map(item => 
                 `<p>• ${item.s.replace("___", `<span class="correct-ans">${item.a}</span>`)}</p>`
             ).join('');
             
-            list.style.display = 'block';
-            screen.style.display = 'flex';
+            list.style.display = 'block'; screen.style.display = 'flex';
         }
 
         function updateStats() {
@@ -183,7 +180,9 @@
 
         function update() {
             if(!gameRunning) return;
+            if(player.shield > 0) player.shield--;
 
+            // Movimiento Pacman
             if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
                 player.dx = player.nextDir.x; player.dy = player.nextDir.y;
             }
@@ -192,73 +191,6 @@
                 if(player.dx !== 0 || player.dy !== 0) playSound('move');
             }
 
+            // Movimiento Fantasmas (AÚN MÁS LENTOS: cada 3 frames)
             ghostMoveCounter++;
-            if(ghostMoveCounter >= 2) {
-                ghosts.forEach(g => {
-                    if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
-                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
-                        const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
-                        const pick = valid[Math.floor(Math.random()*valid.length)];
-                        if(pick) { g.dx = pick.x; g.dy = pick.y; }
-                    }
-                    g.x += g.dx; g.y += g.dy;
-                });
-                ghostMoveCounter = 0;
-            }
-
-            ghosts.forEach(g => {
-                if (g.x === player.x && g.y === player.y) {
-                    lives--; updateStats();
-                    playSound('lose');
-                    if(lives <= 0) { showEndScreen("GAME OVER"); }
-                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0;
-                }
-            });
-
-            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
-            targets.forEach((t, i) => {
-                if(player.x === t.x && player.y === t.y) {
-                    if(options[i] === currentQuestion.a) {
-                        playSound('win');
-                        score++; updateStats(); newQuestion();
-                    } else {
-                        playSound('lose');
-                        lives--; updateStats();
-                        if(lives <= 0) { showEndScreen("GAME OVER"); }
-                        else newQuestion();
-                    }
-                }
-            });
-        }
-
-        function draw() {
-            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            maze.forEach((row, y) => row.forEach((cell, x) => {
-                if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
-            }));
-            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
-            targets.forEach((t, i) => {
-                ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
-                ctx.fillStyle = "white"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
-                ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
-            });
-            ghosts.forEach(g => {
-                ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
-                ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
-                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
-                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill();
-                ctx.fillStyle = "blue"; ctx.beginPath(); ctx.arc(g.x*tileSize+14+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
-                ctx.beginPath(); ctx.arc(g.x*tileSize+26+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
-            });
-            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
-            ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
-        }
-
-        function gameLoop() {
-            if(!gameRunning) return;
-            update(); draw();
-            setTimeout(() => requestAnimationFrame(gameLoop), 150);
-        }
-    </script>
-</body>
-</html>
+            if(ghostMoveCounter >= 3)
