@@ -79,8 +79,8 @@
         <div class="ctrl-btn right" onpointerdown="player.nextDir={x:1,y:0}">▶</div>
     </div>
 
-    <script>
-        // --- DATA SECTION (Tus preguntas de data.js) ---
+  <script>
+        // --- 1. DATA ---
         const database = [
             {s: "She ___ swim very well.", a: "CAN"}, 
             {s: "I ___ go to the party tonight.", a: "MIGHT"},
@@ -100,12 +100,11 @@
 
         const modals = ["CAN", "MUST", "SHOULD", "MAY", "COULD", "MIGHT", "MUSTN'T", "CAN'T"];
 
-        // --- GAME ENGINE SECTION (Tu lógica de game.js e index.html) ---
+        // --- 2. CONFIGURACIÓN ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const tileSize = 40;
 
-        // Configuración de Sonidos (Rutas corregidas para tus archivos mp3.mp3)
         const sounds = {
             music: new Audio('pac_music.mp3.mp3'),
             start: new Audio('pac_Start.mp3.mp3'),
@@ -115,12 +114,16 @@
         };
         sounds.music.loop = true;
 
-        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0} };
-        let score = 0;
-        let lives = 5;
-        let gameRunning = false;
-        let currentQuestion = {};
-        let options = [];
+        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0}, mouth: 0 };
+        
+        // AQUÍ VUELVEN LOS FANTASMAS
+        let ghosts = [
+            { x: 1, y: 1, dx: 1, dy: 0, color: '#FF0000' },
+            { x: 18, y: 1, dx: -1, dy: 0, color: '#FFB8FF' },
+            { x: 1, y: 9, dx: 0, dy: -1, color: '#00FFFF' }
+        ];
+
+        let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
 
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -136,30 +139,29 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
+        function canMove(x, y) {
+            return maze[y] && maze[y][x] === 0;
+        }
+
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
-            score = 0; lives = 5;
-            updateStats();
+            score = 0; lives = 5; updateStats();
             gameRunning = true;
-            sounds.start.play();
-            sounds.music.play();
+            sounds.start.play().catch(()=>{});
+            sounds.music.play().catch(()=>{});
             newQuestion();
-            requestAnimationFrame(gameLoop);
+            gameLoop();
         }
 
         function newQuestion() {
             currentQuestion = database[Math.floor(Math.random() * database.length)];
             document.getElementById('sentence-text').innerText = currentQuestion.s.replace("___", "_______");
-            
-            // Generar opciones (la correcta + 3 aleatorias)
             options = [currentQuestion.a];
             while(options.length < 4) {
                 let r = modals[Math.floor(Math.random() * modals.length)];
                 if(!options.includes(r)) options.push(r);
             }
             options.sort(() => Math.random() - 0.5);
-            
-            // Reset player position
             player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; player.nextDir = {x:0,y:0};
         }
 
@@ -171,38 +173,49 @@
         function update() {
             if(!gameRunning) return;
 
-            // Intentar cambiar de dirección
-            if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
+            // Movimiento Jugador
+            if (canMove(player.x + player.nextDir.x, player.y + player.nextDir.y)) {
                 player.dx = player.nextDir.x;
                 player.dy = player.nextDir.y;
-                if(player.dx !== 0 || player.dy !== 0) sounds.move.play().catch(()=>{});
             }
-
-            // Moverse
-            if (maze[player.y + player.dy][player.x + player.dx] === 0) {
+            if (canMove(player.x + player.dx, player.y + player.dy)) {
                 player.x += player.dx;
                 player.y += player.dy;
+                player.mouth = (player.mouth + 0.2) % 0.4;
             }
 
-            // Colisión con esquinas (opciones)
+            // Lógica de Fantasmas
+            ghosts.forEach(g => {
+                if (Math.random() < 0.1 || !canMove(g.x + g.dx, g.y + g.dy)) {
+                    const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                    const valid = dirs.filter(d => canMove(g.x + d.x, g.y + d.y));
+                    const pick = valid[Math.floor(Math.random()*valid.length)];
+                    if(pick) { g.dx = pick.x; g.dy = pick.y; }
+                }
+                g.x += g.dx; g.y += g.dy;
+
+                // Colisión con Fantasma
+                if (g.x === player.x && g.y === player.y) {
+                    lives--;
+                    sounds.lose.play().catch(()=>{});
+                    updateStats();
+                    if (lives <= 0) { alert("GAME OVER"); location.reload(); }
+                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0;
+                }
+            });
+
+            // Colisión con Opciones (Esquinas)
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
             targets.forEach((t, i) => {
                 if(player.x === t.x && player.y === t.y) {
                     if(options[i] === currentQuestion.a) {
-                        sounds.win.play();
-                        score += 100;
-                        updateStats();
-                        newQuestion();
+                        sounds.win.play().catch(()=>{});
+                        score += 100; updateStats(); newQuestion();
                     } else {
-                        sounds.lose.play();
-                        lives--;
-                        updateStats();
-                        if(lives <= 0) {
-                            alert("GAME OVER - Protocolo Fallido");
-                            location.reload();
-                        } else {
-                            newQuestion();
-                        }
+                        sounds.lose.play().catch(()=>{});
+                        lives--; updateStats();
+                        if(lives <= 0) { alert("GAME OVER"); location.reload(); }
+                        else { newQuestion(); }
                     }
                 }
             });
@@ -212,59 +225,52 @@
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dibujar Laberinto
+            // Laberinto
             maze.forEach((row, y) => row.forEach((cell, x) => {
                 if(cell === 1) {
                     ctx.strokeStyle = "#00d4ff";
                     ctx.lineWidth = 2;
-                    ctx.strokeRect(x * tileSize + 5, y * tileSize + 5, tileSize - 10, tileSize - 10);
+                    ctx.strokeRect(x * tileSize + 4, y * tileSize + 4, tileSize - 8, tileSize - 8);
                 }
             }));
 
-            // Dibujar Opciones (Esquinas)
+            // Opciones
             const colors = ["#0f0", "#0ff", "#f0f", "#f80"];
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
             targets.forEach((t, i) => {
                 ctx.fillStyle = colors[i];
-                ctx.beginPath();
-                ctx.arc(t.x * tileSize + tileSize/2, t.y * tileSize + tileSize/2, 12, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = "white";
-                ctx.font = "bold 12px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText(options[i], t.x * tileSize + tileSize/2, t.y * tileSize + tileSize - 2);
+                ctx.beginPath(); ctx.arc(t.x * tileSize + 20, t.y * tileSize + 20, 15, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "white"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+                ctx.fillText(options[i], t.x * tileSize + 20, t.y * tileSize + 38);
             });
 
-            // Dibujar Jugador (Pac-Man)
+            // Fantasmas
+            ghosts.forEach(g => {
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(g.x * tileSize + 20, g.y * tileSize + 20, 14, Math.PI, 0);
+                ctx.fillRect(g.x * tileSize + 6, g.y * tileSize + 20, 28, 10);
+                ctx.fill();
+            });
+
+            // Pac-Man
             ctx.fillStyle = "yellow";
             ctx.beginPath();
-            let startAngle = 0.2 * Math.PI;
-            let endAngle = 1.8 * Math.PI;
-            // Rotar boca según dirección
-            if(player.dx === -1) { startAngle = 1.2 * Math.PI; endAngle = 0.8 * Math.PI; }
-            if(player.dy === -1) { startAngle = 1.7 * Math.PI; endAngle = 1.3 * Math.PI; }
-            if(player.dy === 1) { startAngle = 0.7 * Math.PI; endAngle = 0.3 * Math.PI; }
-
-            ctx.arc(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2, 15, startAngle, endAngle);
-            ctx.lineTo(player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2);
+            ctx.arc(player.x * tileSize + 20, player.y * tileSize + 20, 16, (0.2) * Math.PI, (1.8) * Math.PI);
+            ctx.lineTo(player.x * tileSize + 20, player.y * tileSize + 20);
             ctx.fill();
         }
 
         function gameLoop() {
-            update();
-            draw();
-            if(gameRunning) setTimeout(() => requestAnimationFrame(gameLoop), 150);
+            if(!gameRunning) return;
+            update(); draw();
+            setTimeout(() => requestAnimationFrame(gameLoop), 150);
         }
 
-        // Soporte para teclado también
-        window.addEventListener('keydown', (e) => {
+        window.onkeydown = (e) => {
             if(e.key === "ArrowUp") player.nextDir = {x:0, y:-1};
             if(e.key === "ArrowDown") player.nextDir = {x:0, y:1};
             if(e.key === "ArrowLeft") player.nextDir = {x:-1, y:0};
             if(e.key === "ArrowRight") player.nextDir = {x:1, y:0};
-        });
-
+        };
     </script>
-</body>
-</html>
