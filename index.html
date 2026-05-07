@@ -3,36 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Modal Maze: Grammar Protocol</title>
+    <title>Modal Maze: 60 Challenge Edition</title>
     <style>
         :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
         body { background: #050505; color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; touch-action: none; }
         .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; padding: 20px; }
         .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); margin: 0; }
         .btn { padding: 15px 40px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 0 15px var(--neon); color: black; margin-top: 20px; font-family: 'Courier New', monospace; font-size: 1.2rem; }
-        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; min-height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; }
         canvas { border: 2px solid var(--blue); box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); max-width: 95vw; max-height: 40vh; background: black; }
         .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 15px; }
-        .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; user-select: none; }
+        .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 1px solid var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; user-select: none; }
         .ctrl-btn:active { background: var(--neon); color: black; }
         .up { grid-area: up; } .left { grid-area: left; } .down { grid-area: down; } .right { grid-area: right; }
         .stats { margin-top: 10px; color: var(--neon); font-weight: bold; font-size: 1.1rem; }
-        #review-list { text-align: left; max-height: 200px; overflow-y: auto; margin-top: 15px; font-size: 0.9rem; width: 100%; border-top: 1px solid #444; padding-top: 10px; }
-        .correct-ans { color: var(--neon); }
+        #review-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; font-size: 0.85rem; width: 100%; border-top: 1px solid #444; padding-top: 10px; }
+        .correct-ans { color: var(--neon); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="screen" class="overlay">
         <h1 class="cyber-title" id="screen-title">MODAL MAZE</h1>
-        <p id="screen-desc" style="color: var(--blue);">Avoid ghosts and collect the correct Modal Verbs.</p>
+        <p id="screen-desc" style="color: var(--blue);">60 New Sentences Protocol. Can you master them all?</p>
         <div id="review-list" style="display:none;"></div>
         <button class="btn" id="main-btn" onclick="startGame()">START</button>
     </div>
 
-    <div id="sentence-box"><span id="sentence-text">LOADING PROTOCOL...</span></div>
+    <div id="sentence-box"><span id="sentence-text">INITIALIZING...</span></div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <div class="stats">SCORE: <span id="score-val">0</span> | LIVES: <span id="lives-val">5</span></div>
+    <div class="stats">SCORE: <span id="score-val">0</span>/10 | LIVES: <span id="lives-val">5</span></div>
 
     <div class="controls">
         <div class="ctrl-btn up" onpointerdown="player.nextDir={x:0,y:-1}">▲</div>
@@ -42,13 +42,47 @@
     </div>
 
     <script>
-        const database = [
-            {s: "She ___ swim very well.", a: "CAN"}, {s: "I ___ go to the party tonight.", a: "MIGHT"},
-            {s: "You ___ smoke here; it's forbidden.", a: "MUSTN'T"}, {s: "___ I help you?", a: "MAY"},
-            {s: "We ___ respect the law.", a: "MUST"}, {s: "You ___ eat more vegetables.", a: "SHOULD"},
-            {s: "They ___ be at home; the lights are on.", a: "MUST"}, {s: "I ___ speak French when I was a child.", a: "COULD"}
+        // --- 60 SENTENCES DATABASE ---
+        const MASTER_DB = [
+            // CAN / CAN'T (10)
+            {s: "Birds ___ fly high in the sky.", a: "CAN"}, {s: "I ___ swim, I never learned.", a: "CAN'T"},
+            {s: "___ you speak more than two languages?", a: "CAN"}, {s: "Cats ___ see very well in the dark.", a: "CAN"},
+            {s: "An elephant ___ jump because it's too heavy.", a: "CAN'T"}, {s: "She ___ play the piano beautifully.", a: "CAN"},
+            {s: "We ___ enter the room; the door is locked.", a: "CAN'T"}, {s: "Humans ___ breathe underwater naturally.", a: "CAN'T"},
+            {s: "___ I use your phone for a second?", a: "CAN"}, {s: "He ___ run very fast; he is an athlete.", a: "CAN"},
+            // MUST / MUSTN'T (10)
+            {s: "You ___ wear a seatbelt while driving.", a: "MUST"}, {s: "You ___ smoke inside the hospital.", a: "MUSTN'T"},
+            {s: "We ___ follow the school rules.", a: "MUST"}, {s: "Drivers ___ stop when the light is red.", a: "MUST"},
+            {s: "You ___ touch that wire; it's dangerous.", a: "MUSTN'T"}, {s: "I ___ finish my homework before tomorrow.", a: "MUST"},
+            {s: "You ___ tell anyone my secret!", a: "MUSTN'T"}, {s: "Students ___ use phones during the exam.", a: "MUSTN'T"},
+            {s: "We ___ protect the environment.", a: "MUST"}, {s: "You ___ shout in the library.", a: "MUSTN'T"},
+            // MAY / MAY NOT (10)
+            {s: "___ I go to the bathroom, teacher?", a: "MAY"}, {s: "It ___ rain this afternoon, take an umbrella.", a: "MAY"},
+            {s: "You ___ leave the table once you finish eating.", a: "MAY"}, {s: "Guests ___ use the pool after 10 PM.", a: "MAY NOT"},
+            {s: "___ I borrow your pen for a moment?", a: "MAY"}, {s: "The boss ___ be in his office right now.", a: "MAY"},
+            {s: "You ___ take photos inside this museum.", a: "MAY NOT"}, {s: "This ___ be the right address, I'm not sure.", a: "MAY"},
+            {s: "Children ___ enter without an adult.", a: "MAY NOT"}, {s: "___ we sit here, please?", a: "MAY"},
+            // MIGHT / MIGHT NOT (10)
+            {s: "If we hurry, we ___ catch the bus.", a: "MIGHT"}, {s: "I ___ go to the party, I'm very tired.", a: "MIGHT NOT"},
+            {s: "There ___ be a storm tonight, look at the sky.", a: "MIGHT"}, {s: "He ___ remember me, we met years ago.", a: "MIGHT NOT"},
+            {s: "We ___ travel to Japan next year.", a: "MIGHT"}, {s: "Don't eat that, it ___ be expired.", a: "MIGHT"},
+            {s: "She ___ arrive on time because of the traffic.", a: "MIGHT NOT"}, {s: "It's early; they ___ be awake yet.", a: "MIGHT NOT"},
+            {s: "Buying this ___ be a good idea.", a: "MIGHT"}, {s: "I ___ have enough money for that car.", a: "MIGHT NOT"},
+            // SHOULD / SHOULDN'T (10)
+            {s: "You ___ drink more water every day.", a: "SHOULD"}, {s: "You ___ eat so much junk food.", a: "SHOULDN'T"},
+            {s: "If you are sick, you ___ see a doctor.", a: "SHOULD"}, {s: "We ___ be kind to other people.", a: "SHOULD"},
+            {s: "You ___ sleep with your lights on.", a: "SHOULDN'T"}, {s: "They ___ save money for the future.", a: "SHOULD"},
+            {s: "You ___ lie to your parents.", a: "SHOULDN'T"}, {s: "I think you ___ apologize to her.", a: "SHOULD"},
+            {s: "You ___ watch TV all day long.", a: "SHOULDN'T"}, {s: "We ___ waste water while brushing teeth.", a: "SHOULDN'T"},
+            // COULD / COULDN'T (10)
+            {s: "When I was young, I ___ run for miles.", a: "COULD"}, {s: "It was so loud I ___ hear anything.", a: "COULDN'T"},
+            {s: "___ you help me with this heavy box?", a: "COULD"}, {s: "I ___ find my keys anywhere yesterday.", a: "COULDN'T"},
+            {s: "She ___ read when she was only four.", a: "COULD"}, {s: "We ___ go to the beach because of the rain.", a: "COULDN'T"},
+            {s: "___ you open the window, please?", a: "COULD"}, {s: "I ___ finish the race; I was exhausted.", a: "COULDN'T"},
+            {s: "The police ___ catch the thief last night.", a: "COULD"}, {s: "I ___ understand the lesson at all.", a: "COULDN'T"}
         ];
-        const modals = ["CAN", "MUST", "SHOULD", "MAY", "COULD", "MIGHT", "MUSTN'T", "CAN'T"];
+
+        const modals = ["CAN", "CAN'T", "MUST", "MUSTN'T", "MAY", "MAY NOT", "MIGHT", "MIGHT NOT", "SHOULD", "SHOULDN'T", "COULD", "COULDN'T"];
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -63,14 +97,8 @@
         };
         sounds.music.loop = true;
 
-        // Función para manejar sonidos sin que se traslapen
         function playSound(name) {
-            Object.keys(sounds).forEach(s => {
-                if(s !== 'music') { // No detenemos la música de fondo
-                    sounds[s].pause();
-                    sounds[s].currentTime = 0;
-                }
-            });
+            Object.keys(sounds).forEach(s => { if(s !== 'music') { sounds[s].pause(); sounds[s].currentTime = 0; } });
             sounds[name].play().catch(()=>{});
         }
 
@@ -82,6 +110,7 @@
         ];
 
         let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
+        let gameDeck = []; // El mazo de 10 preguntas para la partida actual
         let ghostMoveCounter = 0;
 
         const maze = [
@@ -98,6 +127,9 @@
         ];
 
         function startGame() {
+            // Mezclar toda la base de datos y sacar 10 para esta partida
+            gameDeck = [...MASTER_DB].sort(() => Math.random() - 0.5).slice(0, 10);
+            
             document.getElementById('screen').style.display = 'none';
             document.getElementById('review-list').style.display = 'none';
             score = 0; lives = 5; updateStats();
@@ -108,27 +140,15 @@
             gameLoop();
         }
 
-        function showGameOver() {
-            gameRunning = false;
-            sounds.music.pause();
-            const screen = document.getElementById('screen');
-            const list = document.getElementById('review-list');
-            
-            document.getElementById('screen-title').innerText = "GAME OVER";
-            document.getElementById('screen-desc').innerText = "Review the correct answers:";
-            document.getElementById('main-btn').innerText = "TRY AGAIN";
-            
-            list.innerHTML = database.map(item => 
-                `<p>• ${item.s.replace("___", `<span class="correct-ans">${item.a}</span>`)}</p>`
-            ).join('');
-            
-            list.style.display = 'block';
-            screen.style.display = 'flex';
-        }
-
         function newQuestion() {
-            currentQuestion = database[Math.floor(Math.random() * database.length)];
+            if(gameDeck.length === 0) {
+                showEndScreen("MISSION ACCOMPLISHED!");
+                return;
+            }
+            // Sacar la siguiente pregunta del mazo de 10
+            currentQuestion = gameDeck.pop();
             document.getElementById('sentence-text').innerText = currentQuestion.s.replace("___", "_______");
+            
             options = [currentQuestion.a];
             while(options.length < 4) {
                 let r = modals[Math.floor(Math.random() * modals.length)];
@@ -136,6 +156,24 @@
             }
             options.sort(() => Math.random() - 0.5);
             player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; player.nextDir = {x:0,y:0};
+        }
+
+        function showEndScreen(title) {
+            gameRunning = false;
+            sounds.music.pause();
+            const screen = document.getElementById('screen');
+            const list = document.getElementById('review-list');
+            
+            document.getElementById('screen-title').innerText = title;
+            document.getElementById('screen-desc').innerText = "Grammar Review:";
+            document.getElementById('main-btn').innerText = "RESTART PROTOCOL";
+            
+            list.innerHTML = MASTER_DB.filter(q => q.a === q.a).sort(() => 0.5 - Math.random()).slice(0, 15).map(item => 
+                `<p>• ${item.s.replace("___", `<span class="correct-ans">${item.a}</span>`)}</p>`
+            ).join('');
+            
+            list.style.display = 'block';
+            screen.style.display = 'flex';
         }
 
         function updateStats() {
@@ -172,7 +210,7 @@
                 if (g.x === player.x && g.y === player.y) {
                     lives--; updateStats();
                     playSound('lose');
-                    if(lives <= 0) { showGameOver(); }
+                    if(lives <= 0) { showEndScreen("GAME OVER"); }
                     player.x = 10; player.y = 5; player.dx = 0; player.dy = 0;
                 }
             });
@@ -182,11 +220,11 @@
                 if(player.x === t.x && player.y === t.y) {
                     if(options[i] === currentQuestion.a) {
                         playSound('win');
-                        score += 100; updateStats(); newQuestion();
+                        score++; updateStats(); newQuestion();
                     } else {
                         playSound('lose');
                         lives--; updateStats();
-                        if(lives <= 0) { showGameOver(); }
+                        if(lives <= 0) { showEndScreen("GAME OVER"); }
                         else newQuestion();
                     }
                 }
@@ -201,17 +239,15 @@
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
-                ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+                ctx.fillStyle = "white"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
                 ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
             });
             ghosts.forEach(g => {
                 ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
                 ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
-                ctx.fillStyle = "white";
-                ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
+                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
                 ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill();
-                ctx.fillStyle = "blue";
-                ctx.beginPath(); ctx.arc(g.x*tileSize+14+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
+                ctx.fillStyle = "blue"; ctx.beginPath(); ctx.arc(g.x*tileSize+14+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
                 ctx.beginPath(); ctx.arc(g.x*tileSize+26+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
             });
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
