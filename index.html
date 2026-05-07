@@ -3,31 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYT Protocol: Modal Maze</title>
+    <title>Modal Maze: Grammar Protocol</title>
     <style>
         :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
         body { background: #050505; color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; touch-action: none; }
-        .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
-        .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); }
-        .btn { padding: 15px 30px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 0 15px var(--neon); color: black; margin-top: 20px; font-family: 'Courier New', monospace; }
-        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; }
-        canvas { border: 2px solid var(--blue); box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); max-width: 95vw; max-height: 45vh; background: black; }
+        .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; padding: 20px; }
+        .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); margin: 0; }
+        .btn { padding: 15px 40px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 0 15px var(--neon); color: black; margin-top: 20px; font-family: 'Courier New', monospace; font-size: 1.2rem; }
+        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; min-height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        canvas { border: 2px solid var(--blue); box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); max-width: 95vw; max-height: 40vh; background: black; }
         .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 15px; }
         .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; user-select: none; }
         .ctrl-btn:active { background: var(--neon); color: black; }
         .up { grid-area: up; } .left { grid-area: left; } .down { grid-area: down; } .right { grid-area: right; }
         .stats { margin-top: 10px; color: var(--neon); font-weight: bold; font-size: 1.1rem; }
+        #review-list { text-align: left; max-height: 200px; overflow-y: auto; margin-top: 15px; font-size: 0.9rem; width: 100%; border-top: 1px solid #444; padding-top: 10px; }
+        .correct-ans { color: var(--neon); }
     </style>
 </head>
 <body>
 
-    <div id="start-screen" class="overlay">
-        <h1 class="cyber-title">MODAL MAZE</h1>
-        <p style="color: var(--blue);">Cuidado con los fantasmas. ¡Ahora son más lentos!</p>
-        <button class="btn" onclick="startGame()">INICIAR PROTOCOLO</button>
+    <div id="screen" class="overlay">
+        <h1 class="cyber-title" id="screen-title">MODAL MAZE</h1>
+        <p id="screen-desc" style="color: var(--blue);">Avoid ghosts and collect the correct Modal Verbs.</p>
+        <div id="review-list" style="display:none;"></div>
+        <button class="btn" id="main-btn" onclick="startGame()">START</button>
     </div>
 
-    <div id="sentence-box"><span id="sentence-text">CARGANDO...</span></div>
+    <div id="sentence-box"><span id="sentence-text">LOADING PROTOCOL...</span></div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <div class="stats">SCORE: <span id="score-val">0</span> | LIVES: <span id="lives-val">5</span></div>
 
@@ -60,6 +63,17 @@
         };
         sounds.music.loop = true;
 
+        // Función para manejar sonidos sin que se traslapen
+        function playSound(name) {
+            Object.keys(sounds).forEach(s => {
+                if(s !== 'music') { // No detenemos la música de fondo
+                    sounds[s].pause();
+                    sounds[s].currentTime = 0;
+                }
+            });
+            sounds[name].play().catch(()=>{});
+        }
+
         let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0} };
         let ghosts = [
             { x: 1, y: 1, dx: 1, dy: 0, color: '#FF0000' },
@@ -68,7 +82,7 @@
         ];
 
         let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
-        let ghostMoveCounter = 0; // Para controlar la velocidad de los fantasmas
+        let ghostMoveCounter = 0;
 
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -84,13 +98,32 @@
         ];
 
         function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('screen').style.display = 'none';
+            document.getElementById('review-list').style.display = 'none';
             score = 0; lives = 5; updateStats();
             gameRunning = true;
-            sounds.start.play().catch(()=>{});
+            playSound('start');
             sounds.music.play().catch(()=>{});
             newQuestion();
             gameLoop();
+        }
+
+        function showGameOver() {
+            gameRunning = false;
+            sounds.music.pause();
+            const screen = document.getElementById('screen');
+            const list = document.getElementById('review-list');
+            
+            document.getElementById('screen-title').innerText = "GAME OVER";
+            document.getElementById('screen-desc').innerText = "Review the correct answers:";
+            document.getElementById('main-btn').innerText = "TRY AGAIN";
+            
+            list.innerHTML = database.map(item => 
+                `<p>• ${item.s.replace("___", `<span class="correct-ans">${item.a}</span>`)}</p>`
+            ).join('');
+            
+            list.style.display = 'block';
+            screen.style.display = 'flex';
         }
 
         function newQuestion() {
@@ -113,16 +146,14 @@
         function update() {
             if(!gameRunning) return;
 
-            // Movimiento Pacman
             if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
                 player.dx = player.nextDir.x; player.dy = player.nextDir.y;
             }
             if (maze[player.y + player.dy][player.x + player.dx] === 0) {
                 player.x += player.dx; player.y += player.dy;
-                if(player.dx !== 0 || player.dy !== 0) sounds.move.play().catch(()=>{});
+                if(player.dx !== 0 || player.dy !== 0) playSound('move');
             }
 
-            // Movimiento Fantasmas (Solo se mueven cada 2 ciclos = 50% de velocidad)
             ghostMoveCounter++;
             if(ghostMoveCounter >= 2) {
                 ghosts.forEach(g => {
@@ -137,27 +168,25 @@
                 ghostMoveCounter = 0;
             }
 
-            // Colisión con fantasmas (Se revisa siempre para que sea precisa)
             ghosts.forEach(g => {
                 if (g.x === player.x && g.y === player.y) {
                     lives--; updateStats();
-                    sounds.lose.play().catch(()=>{});
-                    if(lives <= 0) { alert("GAME OVER"); location.reload(); }
-                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; // Respawn
+                    playSound('lose');
+                    if(lives <= 0) { showGameOver(); }
+                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0;
                 }
             });
 
-            // Esquinas (Metas)
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 if(player.x === t.x && player.y === t.y) {
                     if(options[i] === currentQuestion.a) {
-                        sounds.win.play().catch(()=>{});
+                        playSound('win');
                         score += 100; updateStats(); newQuestion();
                     } else {
-                        sounds.lose.play().catch(()=>{});
+                        playSound('lose');
                         lives--; updateStats();
-                        if(lives <= 0) { alert("GAME OVER"); location.reload(); }
+                        if(lives <= 0) { showGameOver(); }
                         else newQuestion();
                     }
                 }
@@ -166,32 +195,25 @@
 
         function draw() {
             ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Laberinto
             maze.forEach((row, y) => row.forEach((cell, x) => {
                 if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
             }));
-            // Opciones
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
                 ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
                 ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
             });
-            // Fantasmas con CARA
             ghosts.forEach(g => {
                 ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
                 ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
-                
-                // Ojos
                 ctx.fillStyle = "white";
-                ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill(); // Ojo izq
-                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill(); // Ojo der
-                // Pupilas (mirando a donde caminan)
+                ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill();
                 ctx.fillStyle = "blue";
-                ctx.beginPath(); ctx.arc(g.x*tileSize+14 + (g.dx*2), g.y*tileSize+16 + (g.dy*2), 2, 0, 7); ctx.fill();
-                ctx.beginPath(); ctx.arc(g.x*tileSize+26 + (g.dx*2), g.y*tileSize+16 + (g.dy*2), 2, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+14+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
             });
-            // Pacman
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
             ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
         }
