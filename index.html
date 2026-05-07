@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Modal Maze: Reading Time Edition</title>
+    <title>Modal Maze: 60 Challenge</title>
     <style>
         :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
         body { background: #050505; color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; touch-action: none; }
         .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; padding: 20px; }
         .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); margin: 0; }
         .btn { padding: 15px 40px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 0 15px var(--neon); color: black; margin-top: 20px; font-family: 'Courier New', monospace; font-size: 1.2rem; }
-        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: #fff; text-shadow: 0 0 5px var(--blue); }
-        canvas { border: 2px solid var(--blue); box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); max-width: 95vw; max-height: 40vh; background: black; }
+        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: #fff; }
+        canvas { border: 2px solid var(--blue); max-width: 95vw; max-height: 40vh; background: black; }
         .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 15px; }
         .ctrl-btn { width: 65px; height: 65px; background: rgba(255,255,255,0.1); border: 1px solid var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; user-select: none; }
         .ctrl-btn:active { background: var(--neon); color: black; }
         .up { grid-area: up; } .left { grid-area: left; } .down { grid-area: down; } .right { grid-area: right; }
         .stats { margin-top: 10px; color: var(--neon); font-weight: bold; font-size: 1.1rem; }
-        #review-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; font-size: 0.85rem; width: 100%; border-top: 1px solid #444; padding-top: 10px; }
+        #review-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; font-size: 0.85rem; width: 100%; border-top: 1px solid #444; padding-top: 10px; display: none; }
         .correct-ans { color: var(--neon); font-weight: bold; }
     </style>
 </head>
@@ -25,12 +25,12 @@
 
     <div id="screen" class="overlay">
         <h1 class="cyber-title" id="screen-title">MODAL MAZE</h1>
-        <p id="screen-desc" style="color: var(--blue);">Read carefully. 3 seconds freeze before each round.</p>
-        <div id="review-list" style="display:none;"></div>
+        <p id="screen-desc" style="color: var(--blue);">60 Unique Sentences Protocol</p>
+        <div id="review-list"></div>
         <button class="btn" id="main-btn" onclick="startGame()">START</button>
     </div>
 
-    <div id="sentence-box"><span id="sentence-text">GET READY...</span></div>
+    <div id="sentence-box"><span id="sentence-text">INITIALIZING...</span></div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <div class="stats">SCORE: <span id="score-val">0</span>/10 | LIVES: <span id="lives-val">5</span></div>
 
@@ -43,31 +43,37 @@
 
     <script>
         const MASTER_DB = [
+            // CAN / CAN'T
             {s: "Birds ___ fly high in the sky.", a: "CAN"}, {s: "I ___ swim, I never learned.", a: "CAN'T"},
             {s: "___ you speak more than two languages?", a: "CAN"}, {s: "Cats ___ see very well in the dark.", a: "CAN"},
             {s: "An elephant ___ jump because it's too heavy.", a: "CAN'T"}, {s: "She ___ play the piano beautifully.", a: "CAN"},
             {s: "We ___ enter the room; the door is locked.", a: "CAN'T"}, {s: "Humans ___ breathe underwater naturally.", a: "CAN'T"},
             {s: "___ I use your phone for a second?", a: "CAN"}, {s: "He ___ run very fast; he is an athlete.", a: "CAN"},
+            // MUST / MUSTN'T
             {s: "You ___ wear a seatbelt while driving.", a: "MUST"}, {s: "You ___ smoke inside the hospital.", a: "MUSTN'T"},
             {s: "We ___ follow the school rules.", a: "MUST"}, {s: "Drivers ___ stop when the light is red.", a: "MUST"},
             {s: "You ___ touch that wire; it's dangerous.", a: "MUSTN'T"}, {s: "I ___ finish my homework before tomorrow.", a: "MUST"},
             {s: "You ___ tell anyone my secret!", a: "MUSTN'T"}, {s: "Students ___ use phones during the exam.", a: "MUSTN'T"},
             {s: "We ___ protect the environment.", a: "MUST"}, {s: "You ___ shout in the library.", a: "MUSTN'T"},
+            // MAY / MAY NOT
             {s: "___ I go to the bathroom, teacher?", a: "MAY"}, {s: "It ___ rain this afternoon, take an umbrella.", a: "MAY"},
             {s: "You ___ leave the table once you finish eating.", a: "MAY"}, {s: "Guests ___ use the pool after 10 PM.", a: "MAY NOT"},
             {s: "___ I borrow your pen for a moment?", a: "MAY"}, {s: "The boss ___ be in his office right now.", a: "MAY"},
             {s: "You ___ take photos inside this museum.", a: "MAY NOT"}, {s: "This ___ be the right address, I'm not sure.", a: "MAY"},
             {s: "Children ___ enter without an adult.", a: "MAY NOT"}, {s: "___ we sit here, please?", a: "MAY"},
+            // MIGHT / MIGHT NOT
             {s: "If we hurry, we ___ catch the bus.", a: "MIGHT"}, {s: "I ___ go to the party, I'm very tired.", a: "MIGHT NOT"},
             {s: "There ___ be a storm tonight, look at the sky.", a: "MIGHT"}, {s: "He ___ remember me, we met years ago.", a: "MIGHT NOT"},
             {s: "We ___ travel to Japan next year.", a: "MIGHT"}, {s: "Don't eat that, it ___ be expired.", a: "MIGHT"},
             {s: "She ___ arrive on time because of the traffic.", a: "MIGHT NOT"}, {s: "It's early; they ___ be awake yet.", a: "MIGHT NOT"},
             {s: "Buying this ___ be a good idea.", a: "MIGHT"}, {s: "I ___ have enough money for that car.", a: "MIGHT NOT"},
+            // SHOULD / SHOULDN'T
             {s: "You ___ drink more water every day.", a: "SHOULD"}, {s: "You ___ eat so much junk food.", a: "SHOULDN'T"},
             {s: "If you are sick, you ___ see a doctor.", a: "SHOULD"}, {s: "We ___ be kind to other people.", a: "SHOULD"},
             {s: "You ___ sleep with your lights on.", a: "SHOULDN'T"}, {s: "They ___ save money for the future.", a: "SHOULD"},
             {s: "You ___ lie to your parents.", a: "SHOULDN'T"}, {s: "I think you ___ apologize to her.", a: "SHOULD"},
             {s: "You ___ watch TV all day long.", a: "SHOULDN'T"}, {s: "We ___ waste water while brushing teeth.", a: "SHOULDN'T"},
+            // COULD / COULDN'T
             {s: "When I was young, I ___ run for miles.", a: "COULD"}, {s: "It was so loud I ___ hear anything.", a: "COULDN'T"},
             {s: "___ you help me with this heavy box?", a: "COULD"}, {s: "I ___ find my keys anywhere yesterday.", a: "COULDN'T"},
             {s: "She ___ read when she was only four.", a: "COULD"}, {s: "We ___ go to the beach because of the rain.", a: "COULDN'T"},
@@ -84,15 +90,9 @@
             music: new Audio('pac_music.mp3.mp3'),
             start: new Audio('pac_Start.mp3.mp3'),
             win: new Audio('pac_win.mp3.mp3'),
-            lose: new Audio('pac_lose.mp3.mp3'),
-            move: new Audio('pac_move.mp3.mp3')
+            lose: new Audio('pac_lose.mp3.mp3')
         };
         sounds.music.loop = true;
-
-        function playSound(name) {
-            Object.keys(sounds).forEach(s => { if(s !== 'music') { sounds[s].pause(); sounds[s].currentTime = 0; } });
-            sounds[name].play().catch(()=>{});
-        }
 
         let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0}, shield: 0 };
         let ghosts = [
@@ -131,31 +131,27 @@
             document.getElementById('review-list').style.display = 'none';
             score = 0; lives = 5; updateStats();
             gameRunning = true;
-            playSound('start');
+            sounds.start.play().catch(()=>{});
             sounds.music.play().catch(()=>{});
             newQuestion();
             gameLoop();
         }
 
         function newQuestion() {
-            if(gameDeck.length === 0) { showEndScreen("MISSION COMPLETE!"); return; }
+            if(gameDeck.length === 0) { showEndScreen("EXCELLENT!"); return; }
             currentQuestion = gameDeck.pop();
             document.getElementById('sentence-text').innerText = currentQuestion.s.replace("___", "_______");
             options = shuffle([currentQuestion.a, ...shuffle(modals.filter(m => m !== currentQuestion.a)).slice(0, 3)]);
-            
-            // Congelar juego por 3 segundos para leer
             isPaused = true;
-            freezeTimer = 120; // Aproximadamente 3 segundos a 60fps/150ms delay
+            freezeTimer = 25; 
             player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; player.nextDir = {x:0,y:0};
-            player.shield = 180; 
+            player.shield = 100;
         }
 
         function showEndScreen(title) {
             gameRunning = false;
             sounds.music.pause();
             document.getElementById('screen-title').innerText = title;
-            document.getElementById('review-list').style.display = 'block';
-            document.getElementById('review-list').innerHTML = "Check correct answers below...";
             document.getElementById('screen').style.display = 'flex';
         }
 
@@ -166,16 +162,13 @@
 
         function update() {
             if(!gameRunning) return;
-            
             if(isPaused) {
                 freezeTimer--;
                 if(freezeTimer <= 0) isPaused = false;
                 return;
             }
-
             if(player.shield > 0) player.shield--;
 
-            // Pacman Movement
             if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
                 player.dx = player.nextDir.x; player.dy = player.nextDir.y;
             }
@@ -183,35 +176,30 @@
                 player.x += player.dx; player.y += player.dy;
             }
 
-            // Ghost Movement (Ultra Slow)
             ghostMoveCounter++;
             if(ghostMoveCounter >= 4) {
                 ghosts.forEach(g => {
-                    if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
-                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
-                        const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
-                        const pick = valid[Math.floor(Math.random()*valid.length)];
-                        if(pick) { g.dx = pick.x; g.dy = pick.y; }
-                    }
-                    g.x += g.dx; g.y += g.dy;
+                    const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                    const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
+                    const pick = valid[Math.floor(Math.random()*valid.length)];
+                    if(pick) { g.x += pick.x; g.y += pick.y; }
                 });
                 ghostMoveCounter = 0;
             }
 
-            // Collisions
             ghosts.forEach(g => {
                 if (g.x === player.x && g.y === player.y && player.shield <= 0) {
-                    lives--; updateStats(); playSound('lose');
+                    lives--; updateStats(); sounds.lose.play().catch(()=>{});
                     if(lives <= 0) showEndScreen("GAME OVER");
-                    else { player.x = 10; player.y = 5; player.shield = 150; player.dx=0; player.dy=0; isPaused = true; freezeTimer = 60; }
+                    else { player.x = 10; player.y = 5; player.shield = 100; isPaused = true; freezeTimer = 15; }
                 }
             });
 
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 if(player.x === t.x && player.y === t.y) {
-                    if(options[i] === currentQuestion.a) { playSound('win'); score++; updateStats(); newQuestion(); }
-                    else { playSound('lose'); lives--; updateStats(); if(lives <= 0) showEndScreen("GAME OVER"); else newQuestion(); }
+                    if(options[i] === currentQuestion.a) { sounds.win.play().catch(()=>{}); score++; updateStats(); newQuestion(); }
+                    else { sounds.lose.play().catch(()=>{}); lives--; updateStats(); if(lives <= 0) showEndScreen("GAME OVER"); else newQuestion(); }
                 }
             });
         }
@@ -221,41 +209,24 @@
             maze.forEach((row, y) => row.forEach((cell, x) => {
                 if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
             }));
-            
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
                 ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
                 ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
             });
-
             ghosts.forEach(g => {
-                ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
-                ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
-                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
-                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill();
+                ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0); ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
             });
-
-            // Pacman Fixed (Always visible, blue aura if shielded)
-            if(player.shield > 0) {
-                ctx.strokeStyle = "cyan"; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 19, 0, 7); ctx.stroke();
-            }
-            ctx.fillStyle = "yellow"; ctx.beginPath(); 
-            ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
-            ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
-
-            if(isPaused) {
-                ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(0,0,canvas.width,canvas.height);
-                ctx.fillStyle = var(--neon); ctx.font = "bold 30px Courier New"; ctx.textAlign = "center";
-                ctx.fillText("READY? READ ABOVE!", canvas.width/2, canvas.height/2);
-            }
+            if(player.shield > 0) { ctx.strokeStyle = "cyan"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 19, 0, 7); ctx.stroke(); }
+            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI); ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
+            if(isPaused) { ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = "#ccff00"; ctx.font = "20px Courier"; ctx.textAlign = "center"; ctx.fillText("READING TIME...", canvas.width/2, canvas.height/2); }
         }
 
         function gameLoop() {
             if(!gameRunning) return;
             update(); draw();
-            setTimeout(() => requestAnimationFrame(gameLoop), 150);
+            setTimeout(() => requestAnimationFrame(gameLoop), 140);
         }
     </script>
 </body>
