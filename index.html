@@ -193,4 +193,78 @@
 
             // Movimiento Fantasmas (AÚN MÁS LENTOS: cada 3 frames)
             ghostMoveCounter++;
-            if(ghostMoveCounter >= 3)
+            if(ghostMoveCounter >= 3) {
+                ghosts.forEach(g => {
+                    if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
+                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                        const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
+                        const pick = valid[Math.floor(Math.random()*valid.length)];
+                        if(pick) { g.dx = pick.x; g.dy = pick.y; }
+                    }
+                    g.x += g.dx; g.y += g.dy;
+                });
+                ghostMoveCounter = 0;
+            }
+
+            // Colisiones
+            ghosts.forEach(g => {
+                if (g.x === player.x && g.y === player.y && player.shield <= 0) {
+                    lives--; updateStats(); playSound('lose');
+                    if(lives <= 0) showEndScreen("GAME OVER");
+                    else { player.x = 10; player.y = 5; player.shield = 150; player.dx=0; player.dy=0; }
+                }
+            });
+
+            // Metas (Esquinas)
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
+            targets.forEach((t, i) => {
+                if(player.x === t.x && player.y === t.y) {
+                    if(options[i] === currentQuestion.a) { 
+                        playSound('win'); score++; updateStats(); newQuestion(); 
+                        player.shield = 60; // Pequeño escudo al acertar
+                    } else { 
+                        playSound('lose'); lives--; updateStats(); 
+                        if(lives <= 0) showEndScreen("GAME OVER"); else newQuestion(); 
+                    }
+                }
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Laberinto
+            maze.forEach((row, y) => row.forEach((cell, x) => {
+                if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
+            }));
+            // Opciones
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
+            targets.forEach((t, i) => {
+                ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
+                ctx.fillStyle = "white"; ctx.font = "bold 9px Arial"; ctx.textAlign = "center";
+                ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
+            });
+            // Fantasmas
+            ghosts.forEach(g => {
+                ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
+                ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
+                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill();
+                ctx.fillStyle = "blue"; ctx.beginPath(); ctx.arc(g.x*tileSize+14+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26+(g.dx*2), g.y*tileSize+16+(g.dy*2), 2, 0, 7); ctx.fill();
+            });
+            // Pacman con escudo visual
+            if(player.shield % 10 < 5) {
+                ctx.fillStyle = "yellow"; 
+                ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
+                ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
+            }
+        }
+
+        function gameLoop() {
+            if(!gameRunning) return;
+            update(); draw();
+            setTimeout(() => requestAnimationFrame(gameLoop), 150);
+        }
+    </script>
+</body>
+</html>
