@@ -6,70 +6,29 @@
     <title>CYT Protocol: Modal Maze</title>
     <style>
         :root { --neon: #ccff00; --blue: #00d4ff; --pink: #ff00ff; }
-        body { 
-            background: #050505; color: white; 
-            font-family: 'Courier New', monospace; 
-            display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; 
-            height: 100vh; margin: 0; overflow: hidden; 
-            touch-action: none; 
-        }
-        .overlay { 
-            position: absolute; inset: 0; 
-            background: rgba(0, 0, 0, 0.9); 
-            display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; 
-            z-index: 100; text-align: center; 
-        }
+        body { background: #050505; color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; touch-action: none; }
+        .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
         .cyber-title { color: var(--neon); font-size: 2.5rem; text-shadow: 0 0 15px var(--neon); }
-        .btn { 
-            padding: 15px 30px; background: var(--neon); border: none; 
-            font-weight: bold; cursor: pointer; border-radius: 50px; 
-            box-shadow: 0 0 15px var(--neon); color: black; 
-            margin-top: 20px; font-family: 'Courier New', monospace; 
-        }
-        #sentence-box { 
-            margin-bottom: 10px; padding: 15px; 
-            border: 2px solid var(--blue); width: 90%; 
-            max-width: 600px; text-align: center; 
-            background: rgba(0, 212, 255, 0.1);
-            border-radius: 10px;
-        }
-        canvas { 
-            border: 2px solid var(--blue); 
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); 
-            max-width: 95vw; max-height: 45vh; 
-            background: black;
-        }
-        .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 20px; }
-        .ctrl-btn { 
-            width: 60px; height: 60px; 
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid var(--blue); 
-            color: white; border-radius: 50%; 
-            display: flex; align-items: center; 
-            justify-content: center; font-size: 1.5rem; 
-            user-select: none;
-        }
+        .btn { padding: 15px 30px; background: var(--neon); border: none; font-weight: bold; cursor: pointer; border-radius: 50px; box-shadow: 0 0 15px var(--neon); color: black; margin-top: 20px; font-family: 'Courier New', monospace; }
+        #sentence-box { margin-bottom: 10px; padding: 15px; border: 2px solid var(--blue); width: 90%; max-width: 600px; text-align: center; background: rgba(0, 212, 255, 0.1); border-radius: 10px; }
+        canvas { border: 2px solid var(--blue); box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); max-width: 95vw; max-height: 45vh; background: black; }
+        .controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; margin-top: 15px; }
+        .ctrl-btn { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; user-select: none; }
         .ctrl-btn:active { background: var(--neon); color: black; }
         .up { grid-area: up; } .left { grid-area: left; } .down { grid-area: down; } .right { grid-area: right; }
-        .stats { margin-top: 10px; color: var(--neon); font-weight: bold; }
+        .stats { margin-top: 10px; color: var(--neon); font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
     <div id="start-screen" class="overlay">
         <h1 class="cyber-title">MODAL MAZE</h1>
-        <p>Usa las flechas para recoger el Modal correcto</p>
+        <p style="color: var(--blue);">Evita a los fantasmas y recoge el Modal Verb correcto.</p>
         <button class="btn" onclick="startGame()">INICIAR PROTOCOLO</button>
     </div>
 
-    <div id="sentence-box">
-        <span id="sentence-text">CARGANDO SISTEMA...</span>
-    </div>
-
+    <div id="sentence-box"><span id="sentence-text">CARGANDO...</span></div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
-    
     <div class="stats">SCORE: <span id="score-val">0</span> | LIVES: <span id="lives-val">5</span></div>
 
     <div class="controls">
@@ -79,28 +38,15 @@
         <div class="ctrl-btn right" onpointerdown="player.nextDir={x:1,y:0}">▶</div>
     </div>
 
-  <script>
-        // --- 1. DATA ---
+    <script>
         const database = [
-            {s: "She ___ swim very well.", a: "CAN"}, 
-            {s: "I ___ go to the party tonight.", a: "MIGHT"},
-            {s: "You ___ smoke here; it's forbidden.", a: "MUSTN'T"}, 
-            {s: "___ I help you?", a: "MAY"},
-            {s: "We ___ respect the law.", a: "MUST"}, 
-            {s: "You ___ eat more vegetables.", a: "SHOULD"},
-            {s: "They ___ be at home; the lights are on.", a: "MUST"}, 
-            {s: "I ___ speak French when I was a child.", a: "COULD"},
-            {s: "You ___ drive so fast; it's dangerous.", a: "SHOULDN'T"}, 
-            {s: "___ you open the window, please?", a: "COULD"},
-            {s: "It ___ rain later, look at the clouds.", a: "MAY"}, 
-            {s: "You ___ wear a seatbelt.", a: "MUST"},
-            {s: "I ___ find my keys anywhere.", a: "CAN'T"}, 
-            {s: "She ___ be tired after work.", a: "SHOULD"}
+            {s: "She ___ swim very well.", a: "CAN"}, {s: "I ___ go to the party tonight.", a: "MIGHT"},
+            {s: "You ___ smoke here; it's forbidden.", a: "MUSTN'T"}, {s: "___ I help you?", a: "MAY"},
+            {s: "We ___ respect the law.", a: "MUST"}, {s: "You ___ eat more vegetables.", a: "SHOULD"},
+            {s: "They ___ be at home; the lights are on.", a: "MUST"}, {s: "I ___ speak French when I was a child.", a: "COULD"}
         ];
-
         const modals = ["CAN", "MUST", "SHOULD", "MAY", "COULD", "MIGHT", "MUSTN'T", "CAN'T"];
 
-        // --- 2. CONFIGURACIÓN ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const tileSize = 40;
@@ -114,13 +60,11 @@
         };
         sounds.music.loop = true;
 
-        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0}, mouth: 0 };
-        
-        // AQUÍ VUELVEN LOS FANTASMAS
+        let player = { x: 10, y: 5, dx: 0, dy: 0, nextDir: {x:0,y:0} };
         let ghosts = [
             { x: 1, y: 1, dx: 1, dy: 0, color: '#FF0000' },
             { x: 18, y: 1, dx: -1, dy: 0, color: '#FFB8FF' },
-            { x: 1, y: 9, dx: 0, dy: -1, color: '#00FFFF' }
+            { x: 1, y: 8, dx: 0, dy: -1, color: '#00FFFF' }
         ];
 
         let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
@@ -135,13 +79,8 @@
             [1,0,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,0,1,1,0,1,1,1,1,0,1,1,0,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
-
-        function canMove(x, y) {
-            return maze[y] && maze[y][x] === 0;
-        }
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
@@ -173,39 +112,36 @@
         function update() {
             if(!gameRunning) return;
 
-            // Movimiento Jugador
-            if (canMove(player.x + player.nextDir.x, player.y + player.nextDir.y)) {
-                player.dx = player.nextDir.x;
-                player.dy = player.nextDir.y;
+            // Movimiento Pacman
+            if (maze[player.y + player.nextDir.y][player.x + player.nextDir.x] === 0) {
+                player.dx = player.nextDir.x; player.dy = player.nextDir.y;
             }
-            if (canMove(player.x + player.dx, player.y + player.dy)) {
-                player.x += player.dx;
-                player.y += player.dy;
-                player.mouth = (player.mouth + 0.2) % 0.4;
+            if (maze[player.y + player.dy][player.x + player.dx] === 0) {
+                player.x += player.dx; player.y += player.dy;
+                if(player.dx !== 0 || player.dy !== 0) sounds.move.play().catch(()=>{});
             }
 
-            // Lógica de Fantasmas
+            // Movimiento Fantasmas
             ghosts.forEach(g => {
-                if (Math.random() < 0.1 || !canMove(g.x + g.dx, g.y + g.dy)) {
+                if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
                     const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
-                    const valid = dirs.filter(d => canMove(g.x + d.x, g.y + d.y));
+                    const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
                     const pick = valid[Math.floor(Math.random()*valid.length)];
                     if(pick) { g.dx = pick.x; g.dy = pick.y; }
                 }
                 g.x += g.dx; g.y += g.dy;
 
-                // Colisión con Fantasma
+                // TOCAR FANTASMA = PERDER VIDA
                 if (g.x === player.x && g.y === player.y) {
-                    lives--;
+                    lives--; updateStats();
                     sounds.lose.play().catch(()=>{});
-                    updateStats();
-                    if (lives <= 0) { alert("GAME OVER"); location.reload(); }
-                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0;
+                    if(lives <= 0) { alert("GAME OVER"); location.reload(); }
+                    player.x = 10; player.y = 5; // Respawn
                 }
             });
 
-            // Colisión con Opciones (Esquinas)
-            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
+            // Esquinas
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 if(player.x === t.x && player.y === t.y) {
                     if(options[i] === currentQuestion.a) {
@@ -215,50 +151,32 @@
                         sounds.lose.play().catch(()=>{});
                         lives--; updateStats();
                         if(lives <= 0) { alert("GAME OVER"); location.reload(); }
-                        else { newQuestion(); }
+                        else newQuestion();
                     }
                 }
             });
         }
 
         function draw() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Laberinto
+            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Dibujar Laberinto
             maze.forEach((row, y) => row.forEach((cell, x) => {
-                if(cell === 1) {
-                    ctx.strokeStyle = "#00d4ff";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x * tileSize + 4, y * tileSize + 4, tileSize - 8, tileSize - 8);
-                }
+                if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
             }));
-
-            // Opciones
-            const colors = ["#0f0", "#0ff", "#f0f", "#f80"];
-            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:9}, {x:18,y:9}];
+            // Dibujar Opciones
+            const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
-                ctx.fillStyle = colors[i];
-                ctx.beginPath(); ctx.arc(t.x * tileSize + 20, t.y * tileSize + 20, 15, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "white"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
-                ctx.fillText(options[i], t.x * tileSize + 20, t.y * tileSize + 38);
+                ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
+                ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
             });
-
-            // Fantasmas
+            // Dibujar Fantasmas
             ghosts.forEach(g => {
-                ctx.fillStyle = g.color;
-                ctx.beginPath();
-                ctx.arc(g.x * tileSize + 20, g.y * tileSize + 20, 14, Math.PI, 0);
-                ctx.fillRect(g.x * tileSize + 6, g.y * tileSize + 20, 28, 10);
-                ctx.fill();
+                ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
+                ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
             });
-
-            // Pac-Man
-            ctx.fillStyle = "yellow";
-            ctx.beginPath();
-            ctx.arc(player.x * tileSize + 20, player.y * tileSize + 20, 16, (0.2) * Math.PI, (1.8) * Math.PI);
-            ctx.lineTo(player.x * tileSize + 20, player.y * tileSize + 20);
-            ctx.fill();
+            // Dibujar Pacman
+            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
+            ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
         }
 
         function gameLoop() {
@@ -266,11 +184,6 @@
             update(); draw();
             setTimeout(() => requestAnimationFrame(gameLoop), 150);
         }
-
-        window.onkeydown = (e) => {
-            if(e.key === "ArrowUp") player.nextDir = {x:0, y:-1};
-            if(e.key === "ArrowDown") player.nextDir = {x:0, y:1};
-            if(e.key === "ArrowLeft") player.nextDir = {x:-1, y:0};
-            if(e.key === "ArrowRight") player.nextDir = {x:1, y:0};
-        };
     </script>
+</body>
+</html>
