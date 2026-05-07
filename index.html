@@ -23,7 +23,7 @@
 
     <div id="start-screen" class="overlay">
         <h1 class="cyber-title">MODAL MAZE</h1>
-        <p style="color: var(--blue);">Evita a los fantasmas y recoge el Modal Verb correcto.</p>
+        <p style="color: var(--blue);">Cuidado con los fantasmas. ¡Ahora son más lentos!</p>
         <button class="btn" onclick="startGame()">INICIAR PROTOCOLO</button>
     </div>
 
@@ -68,6 +68,7 @@
         ];
 
         let score = 0, lives = 5, gameRunning = false, currentQuestion = {}, options = [];
+        let ghostMoveCounter = 0; // Para controlar la velocidad de los fantasmas
 
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -121,26 +122,32 @@
                 if(player.dx !== 0 || player.dy !== 0) sounds.move.play().catch(()=>{});
             }
 
-            // Movimiento Fantasmas
-            ghosts.forEach(g => {
-                if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
-                    const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
-                    const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
-                    const pick = valid[Math.floor(Math.random()*valid.length)];
-                    if(pick) { g.dx = pick.x; g.dy = pick.y; }
-                }
-                g.x += g.dx; g.y += g.dy;
+            // Movimiento Fantasmas (Solo se mueven cada 2 ciclos = 50% de velocidad)
+            ghostMoveCounter++;
+            if(ghostMoveCounter >= 2) {
+                ghosts.forEach(g => {
+                    if (Math.random() < 0.2 || maze[g.y + g.dy][g.x + g.dx] === 1) {
+                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                        const valid = dirs.filter(d => maze[g.y + d.y][g.x + d.x] === 0);
+                        const pick = valid[Math.floor(Math.random()*valid.length)];
+                        if(pick) { g.dx = pick.x; g.dy = pick.y; }
+                    }
+                    g.x += g.dx; g.y += g.dy;
+                });
+                ghostMoveCounter = 0;
+            }
 
-                // TOCAR FANTASMA = PERDER VIDA
+            // Colisión con fantasmas (Se revisa siempre para que sea precisa)
+            ghosts.forEach(g => {
                 if (g.x === player.x && g.y === player.y) {
                     lives--; updateStats();
                     sounds.lose.play().catch(()=>{});
                     if(lives <= 0) { alert("GAME OVER"); location.reload(); }
-                    player.x = 10; player.y = 5; // Respawn
+                    player.x = 10; player.y = 5; player.dx = 0; player.dy = 0; // Respawn
                 }
             });
 
-            // Esquinas
+            // Esquinas (Metas)
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 if(player.x === t.x && player.y === t.y) {
@@ -159,22 +166,32 @@
 
         function draw() {
             ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Dibujar Laberinto
+            // Laberinto
             maze.forEach((row, y) => row.forEach((cell, x) => {
                 if(cell === 1) { ctx.strokeStyle = "#00d4ff"; ctx.strokeRect(x*tileSize+4, y*tileSize+4, tileSize-8, tileSize-8); }
             }));
-            // Dibujar Opciones
+            // Opciones
             const targets = [{x:1,y:1}, {x:18,y:1}, {x:1,y:8}, {x:18,y:8}];
             targets.forEach((t, i) => {
                 ctx.fillStyle = "#ff00ff"; ctx.beginPath(); ctx.arc(t.x*tileSize+20, t.y*tileSize+20, 15, 0, 7); ctx.fill();
-                ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
+                ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+                ctx.fillText(options[i], t.x*tileSize+20, t.y*tileSize+38);
             });
-            // Dibujar Fantasmas
+            // Fantasmas con CARA
             ghosts.forEach(g => {
                 ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x*tileSize+20, g.y*tileSize+18, 14, Math.PI, 0);
                 ctx.fillRect(g.x*tileSize+6, g.y*tileSize+18, 28, 12); ctx.fill();
+                
+                // Ojos
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(g.x*tileSize+14, g.y*tileSize+16, 4, 0, 7); ctx.fill(); // Ojo izq
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26, g.y*tileSize+16, 4, 0, 7); ctx.fill(); // Ojo der
+                // Pupilas (mirando a donde caminan)
+                ctx.fillStyle = "blue";
+                ctx.beginPath(); ctx.arc(g.x*tileSize+14 + (g.dx*2), g.y*tileSize+16 + (g.dy*2), 2, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(g.x*tileSize+26 + (g.dx*2), g.y*tileSize+16 + (g.dy*2), 2, 0, 7); ctx.fill();
             });
-            // Dibujar Pacman
+            // Pacman
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(player.x*tileSize+20, player.y*tileSize+20, 16, 0.2*Math.PI, 1.8*Math.PI);
             ctx.lineTo(player.x*tileSize+20, player.y*tileSize+20); ctx.fill();
         }
